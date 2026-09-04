@@ -1,5 +1,6 @@
 import { tracks } from '../src/data/tracks';
-import { ensureSchema, sql } from './_lib/db';
+import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db';
+import { isSuspicious } from './_lib/vpn';
 
 export const config = { runtime: 'edge' };
 
@@ -15,6 +16,9 @@ export const config = { runtime: 'edge' };
  * The file is proxied rather than redirected to, because a redirect cannot add
  * Content-Disposition, and putting that header on /music/* directly would stop
  * the <audio> element from streaming the same path.
+ *
+ * Every guard below only decides whether the hit is *counted*. The file itself
+ * is always served.
  */
 export default async function handler(request: Request) {
   const url = new URL(request.url);
@@ -34,21 +38,12 @@ export default async function handler(request: Request) {
     return new Response('file missing', { status: 404 });
   }
 
-  if (sql) {
-    try {
-      await ensureSchema();
-      await sql`
-        INSERT INTO downloads (track_id, count, updated_at)
-        VALUES (${track.id}, 1, now())
-        ON CONFLICT (track_id)
-        DO UPDATE SET count = downloads.count + 1, updated_at = now()
-      `;
-    } catch {
-      /* counting is best effort; the file still has to arrive */
-    }
+  // Count in the background so screening never delays the download.
+  const counted = countDownload(request, track.id);
+  if (typeof (globalThis as { waitUntil?: unknown }).waitUntil !== 'function') {
+    void counted;
   }
 
-  // Name the file after the track rather than the slug on disk.
   const extension = track.src.split('.').pop() ?? 'mp3';
   const filename = `${track.title.replace(/["\/:*?<>|]/g, '')}.${extension}`;
 
@@ -59,4 +54,40 @@ export default async function handler(request: Request) {
       'cache-control': 'no-store',
     },
   });
+}
+
+/** Records one download unless it looks automated, proxied, or repeated. */
+async function countDownload(request: Request, trackId: string) {
+  if (!sql) return;
+
+  const ip = clientIp(request);
+  if (await isSuspicious(request, ip)) return;
+
+  try {
+    await ensureSchema();
+    const ipHash = await hashIp(ip || 'unknown');
+
+    // Claim the (track, visitor) pair. The update only takes when the previous
+    // hit is older than the cooldown, so a repeat inside the window changes
+    // nothing and reports no rows.
+    const claimed = (await sql`
+      INSERT INTO download_hits (track_id, ip_hash, last_seen)
+      VALUES (${trackId}, ${ipHash}, now())
+      ON CONFLICT (track_id, ip_hash) DO UPDATE
+        SET last_seen = now()
+        WHERE download_hits.last_seen < now() - (${COOLDOWN_MINUTES} || ' minutes')::interval
+      RETURNING track_id
+    `) as unknown[];
+
+    if (!claimed.length) return;
+
+    await sql`
+      INSERT INTO downloads (track_id, count, updated_at)
+      VALUES (${trackId}, 1, now())
+      ON CONFLICT (track_id)
+      DO UPDATE SET count = downloads.count + 1, updated_at = now()
+    `;
+  } catch {
+    /* counting is best effort; the file has already been sent */
+  }
 }
