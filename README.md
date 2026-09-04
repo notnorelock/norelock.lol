@@ -14,6 +14,7 @@ bun install
 bun run dev          # localhost:5173
 bun run build        # vite build, then slices the audio into HLS segments
 bun run typecheck
+bun run salt         # prints a fresh IP_HASH_SALT
 ```
 
 `bun run dev` serves the site without the API — download counters stay at zero
@@ -191,8 +192,31 @@ result is not stored; only the eventual digest is.
 Both are set in the Vercel dashboard. Neither is needed to build or run the
 site — without them downloads work normally and counts stay at zero.
 
-Rotating `IP_HASH_SALT` invalidates every stored digest, which is the intended
-way to clear the deduplication history.
+### Setting `IP_HASH_SALT`
+
+```bash
+bun run salt
+```
+
+That prints a fresh 32-byte value. Then:
+
+1. Vercel dashboard -> the project -> **Settings** -> **Environment Variables**
+2. Key `IP_HASH_SALT`, value the generated string
+3. Tick **Production**, **Preview** and **Development**
+4. Save, then **redeploy** — environment variables are read at build time, so
+   an existing deployment keeps the old value (or none at all)
+
+For local work with `vercel dev`, put the same line in `.env`, which is already
+gitignored.
+
+If the salt is missing, `hashIp()` throws rather than emit a reversible digest.
+The download still works; it simply is not counted. So a counter stuck at zero
+with `/api/stats` reporting `status: "ok"` and an empty `download_hits` table
+usually means the salt was never set.
+
+Rotating the salt invalidates every stored digest, which is also the intended
+way to clear the deduplication history: after a change, everyone can be counted
+again once.
 
 ---
 
