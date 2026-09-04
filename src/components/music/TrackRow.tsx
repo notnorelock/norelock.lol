@@ -74,6 +74,8 @@ export function TrackRow(props: { track: Track; queue?: Track[] }) {
           href={downloadHref(props.track)}
           onClick={() => noteDownload(props.track)}
           aria-label={`Download ${props.track.title} as MP3`}
+          target="_self"
+          rel="external"
         >
           <IconDownload size={17} stroke={1.6} />
           <span class="track-downloads">{formatCount(downloadCounts()[props.track.id] ?? 0)}</span>

@@ -94,6 +94,8 @@ export function PlayerBar() {
               href={downloadHref(track())}
               onClick={() => noteDownload(track())}
               aria-label="Download MP3"
+              target="_self"
+              rel="external"
             >
               <IconDownload size={16} stroke={1.6} />
             </a>
