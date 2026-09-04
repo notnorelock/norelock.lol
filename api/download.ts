@@ -24,6 +24,11 @@ export default async function handler(request: Request) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
 
+  // ?debug=1 reports what the counter would do, without sending the file.
+  if (url.searchParams.get('debug') === '1') {
+    return debugReport(request, id);
+  }
+
   const track = tracks.find((item) => item.id === id);
   if (!track) {
     return new Response('unknown track', { status: 404 });
@@ -76,7 +81,7 @@ async function countDownload(request: Request, trackId: string) {
       VALUES (${trackId}, ${ipHash}, now())
       ON CONFLICT (track_id, ip_hash) DO UPDATE
         SET last_seen = now()
-        WHERE download_hits.last_seen < now() - (${COOLDOWN_MINUTES} || ' minutes')::interval
+        WHERE download_hits.last_seen < now() - (${COOLDOWN_MINUTES}::int * interval '1 minute')
       RETURNING track_id
     `) as unknown[];
 
@@ -88,7 +93,45 @@ async function countDownload(request: Request, trackId: string) {
       ON CONFLICT (track_id)
       DO UPDATE SET count = downloads.count + 1, updated_at = now()
     `;
-  } catch {
-    /* counting is best effort; the file has already been sent */
+  } catch (error) {
+    // Counting is best effort, but a silent failure is impossible to debug.
+    console.error('[download] count failed:', error instanceof Error ? error.message : error);
   }
+}
+
+/** Explains, step by step, why a hit would or would not be counted. */
+async function debugReport(request: Request, id: string | null) {
+  const track = tracks.find((item) => item.id === id);
+  const ip = clientIp(request);
+
+  const report: Record<string, unknown> = {
+    id,
+    trackFound: Boolean(track),
+    hasDatabase: Boolean(sql),
+    ip: ip ? `${ip.slice(0, 4)}...` : '(none)',
+    userAgent: request.headers.get('user-agent')?.slice(0, 40) ?? null,
+    secFetchSite: request.headers.get('sec-fetch-site'),
+    forwardedHops: request.headers.get('x-forwarded-for')?.split(',').length ?? 0,
+  };
+
+  try {
+    report.suspicious = await isSuspicious(request, ip);
+  } catch (error) {
+    report.suspiciousError = error instanceof Error ? error.message : String(error);
+  }
+
+  if (sql) {
+    try {
+      await ensureSchema();
+      report.schemaOk = true;
+      const rows = (await sql`SELECT track_id, count FROM downloads`) as unknown[];
+      report.rowsInDownloads = rows.length;
+      const hits = (await sql`SELECT count(*) AS n FROM download_hits`) as { n: string }[];
+      report.rowsInHits = Number(hits[0]?.n ?? 0);
+    } catch (error) {
+      report.dbError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  return Response.json(report, { headers: { 'cache-control': 'no-store' } });
 }
