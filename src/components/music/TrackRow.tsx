@@ -4,6 +4,7 @@ import { CoverArt } from '@/components/music/CoverArt';
 import { Waveform } from '@/components/music/Waveform';
 import type { Track } from '@/data/tracks';
 import { formatTime, player } from '@/lib/player';
+import { downloadCounts, downloadHref, formatCount, noteDownload } from '@/lib/downloads';
 
 export function TrackRow(props: { track: Track; queue?: Track[] }) {
   const isCurrent = () => player.isCurrent(props.track);
@@ -70,12 +71,15 @@ export function TrackRow(props: { track: Track; queue?: Track[] }) {
       <Show when={props.track.downloadable !== false}>
         <a
           class="track-download"
-          href={props.track.src}
-          download=""
+          href={downloadHref(props.track)}
+          onClick={() => noteDownload(props.track)}
           aria-label={`Download ${props.track.title} as MP3`}
         >
           <IconDownload size={17} stroke={1.6} />
           <span>320</span>
+          <Show when={downloadCounts()[props.track.id]}>
+            {(count) => <span class="track-downloads">{formatCount(count())}</span>}
+          </Show>
         </a>
       </Show>
     </article>

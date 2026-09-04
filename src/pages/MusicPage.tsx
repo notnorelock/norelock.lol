@@ -3,10 +3,12 @@ import { IconArrowUpRight } from '@tabler/icons-solidjs';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { ReleaseGroup } from '@/components/music/ReleaseGroup';
 import { releases } from '@/data/tracks';
+import { loadDownloadCounts } from '@/lib/downloads';
 
 export default function MusicPage() {
   onMount(() => {
     document.title = 'music — norelock.lol';
+    void loadDownloadCounts();
   });
 
   return (

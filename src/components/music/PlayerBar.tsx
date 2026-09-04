@@ -11,6 +11,7 @@ import {
 import { CoverArt } from '@/components/music/CoverArt';
 import { Waveform } from '@/components/music/Waveform';
 import { formatTime, player } from '@/lib/player';
+import { downloadHref, noteDownload } from '@/lib/downloads';
 
 export function PlayerBar() {
   const total = () => player.duration() || player.current()?.duration || 0;
@@ -88,7 +89,12 @@ export function PlayerBar() {
               />
             </label>
 
-            <a class="player-download" href={track().src} download="" aria-label="Download MP3">
+            <a
+              class="player-download"
+              href={downloadHref(track())}
+              onClick={() => noteDownload(track())}
+              aria-label="Download MP3"
+            >
               <IconDownload size={16} stroke={1.6} />
             </a>
 
