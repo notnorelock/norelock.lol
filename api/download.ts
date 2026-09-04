@@ -112,6 +112,11 @@ async function countDownload(request: Request, trackId: string) {
 
     if (!claimed.length) return;
 
+    // The digest changes daily, so yesterday's rows can never match again.
+    // Clearing them keeps the table from growing and means nothing about a
+    // visitor is retained beyond the window it is needed for.
+    await sql`DELETE FROM download_hits WHERE last_seen < now() - interval '2 days'`;
+
     await sql`
       INSERT INTO downloads (track_id, count, updated_at)
       VALUES (${trackId}, 1, now())

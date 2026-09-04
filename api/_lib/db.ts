@@ -44,12 +44,25 @@ export function ensureSchema() {
 }
 
 /**
- * SHA-256 of the address plus a server-side salt. Storing a hash means the
- * counter works without keeping personal data around.
+ * A per-day, salted digest of the address.
+ *
+ * Three things make this a pseudonym rather than stored personal data:
+ *
+ *  - the salt is a secret only the server knows, so the whole IPv4 space
+ *    cannot simply be hashed and looked up in a rainbow table;
+ *  - the current date is mixed in, so yesterday's digest cannot be matched
+ *    against today's, which rules out tracking someone over time;
+ *  - only the digest is written, never the address itself.
+ *
+ * Without a configured salt the digests would be trivially reversible, so the
+ * function refuses to produce one rather than pretending to anonymise.
  */
 export async function hashIp(ip: string) {
-  const salt = process.env.IP_HASH_SALT ?? 'norelock';
-  const bytes = new TextEncoder().encode(`${salt}:${ip}`);
+  const salt = process.env.IP_HASH_SALT;
+  if (!salt) throw new Error('IP_HASH_SALT is not set; refusing to store a weak digest');
+
+  const day = new Date().toISOString().slice(0, 10);
+  const bytes = new TextEncoder().encode(`${salt}:${day}:${ip}`);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
