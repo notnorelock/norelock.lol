@@ -24,8 +24,10 @@ export default async function handler(request: Request) {
   const url = new URL(request.url);
   const id = url.searchParams.get('id');
 
-  // ?debug=1 reports what the counter would do, without sending the file.
-  if (url.searchParams.get('debug') === '1') {
+  // ?debug=1 explains what the counter would do, without sending the file.
+  // Preview and development only: the report exposes part of the visitor's
+  // address and the state of the database.
+  if (url.searchParams.get('debug') === '1' && process.env.VERCEL_ENV !== 'production') {
     return debugReport(request, id);
   }
 
@@ -118,7 +120,6 @@ async function debugReport(request: Request, id: string | null) {
     forwardedHops: request.headers.get('x-forwarded-for')?.split(',').length ?? 0,
     via: request.headers.get('via'),
     forwarded: request.headers.get('forwarded'),
-    allHeaders: [...request.headers.keys()].join(','),
   };
 
   try {
