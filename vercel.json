@@ -20,6 +20,28 @@
       ]
     },
     {
+      "source": "/music/(.*).ts",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/music/(.*).m3u8",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.apple.mpegurl"
+        }
+      ]
+    },
+    {
       "source": "/music/(.*)",
       "headers": [
         {
@@ -28,5 +50,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/download.ts": {
+      "includeFiles": "media/**"
+    }
+  }
 }

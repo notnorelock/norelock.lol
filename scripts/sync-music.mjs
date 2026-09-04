@@ -1,12 +1,12 @@
 /**
- * Reads every mp3 under public/music/, pulls its ID3 tags, extracts the
+ * Reads every mp3 under media/, pulls its ID3 tags, extracts the
  * embedded cover art, measures the waveform, and rewrites src/data/tracks.ts.
  *
  *   bun run music            scan, organise and regenerate
  *   bun run music -- --force re-extract covers that already exist
  *   bun run music -- --dry   show what would move without touching anything
  *
- * Album layout: a file sitting in public/music/<album>/ belongs to that album.
+ * Album layout: a file sitting in media/<album>/ belongs to that album.
  * A loose file carrying an ID3 "album" tag is moved into its own folder. Loose
  * files without the tag stay in the root and are listed as singles.
  *
@@ -18,7 +18,9 @@ import { mkdir, readdir, rename, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, relative, sep } from 'node:path';
 import { ffmpeg, probe, runToFile } from './lib/ffmpeg.mjs';
 
-const MUSIC_DIR = 'public/music';
+// Source audio lives outside public/ so the files are never served directly;
+// /api/download is the only way to get one.
+const MUSIC_DIR = 'media';
 const COVER_DIR = 'public/music/covers';
 const TRACKS_FILE = 'src/data/tracks.ts';
 const PEAKS_FILE = 'src/data/peaks.json';
@@ -150,10 +152,13 @@ function quote(value) {
   return value.includes("'") ? '"' + value.replace(/"/g, '\\"') + '"' : "'" + value + "'";
 }
 
-/** Turns a path under public/ into a URL, encoding each segment separately. */
+/**
+ * Path of the source file relative to media/, used by the download endpoint to
+ * locate it on disk. This is not a public URL: the mp3 files are deliberately
+ * not served, so /api/download is the only way to reach one.
+ */
 function toHref(path) {
-  const parts = relative('public', path).split(sep).map(encodeURIComponent);
-  return '/' + parts.join('/');
+  return relative(MUSIC_DIR, path).split(sep).join('/');
 }
 
 if (!existsSync(MUSIC_DIR)) {
@@ -170,7 +175,7 @@ if (!files.length) {
 
 await mkdir(COVER_DIR, { recursive: true });
 
-// Pass 1: move loose files carrying an album tag into public/music/<album>/.
+// Pass 1: move loose files carrying an album tag into media/<album>/.
 const moved = [];
 
 for (const file of files) {

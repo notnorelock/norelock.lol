@@ -1,8 +1,17 @@
+import { createReadStream } from 'node:fs';
+import { stat } from 'node:fs/promises';
+import { join, normalize } from 'node:path';
+import { Readable } from 'node:stream';
 import { tracks } from '../src/data/tracks';
 import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db';
 import { screenRequest } from './_lib/vpn';
 
-export const config = { runtime: 'edge' };
+// Node runtime, not edge: this reads the source files from disk, and they are
+// deliberately outside public/ so they have no public URL.
+export const config = { runtime: 'nodejs' };
+
+/** Source audio lives here, outside public/, so it is never served directly. */
+const MEDIA_DIR = 'media';
 
 /**
  * Counts a download and streams the file back as an attachment.
@@ -40,25 +49,35 @@ export default async function handler(request: Request) {
     return new Response('not downloadable', { status: 403 });
   }
 
-  // Fetch the file and record the hit at the same time. The write has to be
-  // awaited before responding, because an edge function stops executing the
-  // moment it returns, dropping anything still running in the background.
-  const [upstream] = await Promise.all([
-    fetch(new URL(track.src, url.origin)),
-    countDownload(request, track.id),
-  ]);
+  // track.src comes from the generated list, but normalise anyway so a stray
+  // '..' could never walk out of the media directory.
+  const relative = normalize(track.src).replace(/^(\.\.[\/])+/, '');
+  const path = join(process.cwd(), MEDIA_DIR, relative);
 
-  if (!upstream.ok || !upstream.body) {
+  let size: number;
+  try {
+    size = (await stat(path)).size;
+  } catch {
     return new Response('file missing', { status: 404 });
   }
+
+  // Inline requests are the player falling back from HLS, not someone saving
+  // the file, so they must not move the download counter.
+  const inline = url.searchParams.get('inline') === '1';
+
+  // Record the hit before responding: the function stops once it returns.
+  if (!inline) await countDownload(request, track.id);
 
   const extension = track.src.split('.').pop() ?? 'mp3';
   const filename = `${track.title.replace(/["\/:*?<>|]/g, '')}.${extension}`;
 
-  return new Response(upstream.body, {
+  const stream = Readable.toWeb(createReadStream(path)) as ReadableStream;
+
+  return new Response(stream, {
     headers: {
-      'content-type': upstream.headers.get('content-type') ?? 'audio/mpeg',
-      'content-disposition': `attachment; filename="${filename}"`,
+      'content-type': 'audio/mpeg',
+      'content-length': String(size),
+      'content-disposition': inline ? 'inline' : `attachment; filename="${filename}"`,
       'cache-control': 'no-store',
     },
   });

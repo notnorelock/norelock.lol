@@ -1,5 +1,6 @@
 import { createSignal, onCleanup } from 'solid-js';
 import type { Track } from '@/data/tracks';
+import { attachTrack, detachStream } from '@/lib/stream';
 
 /**
  * One <audio> element drives the whole page, so the row and the docked bar
@@ -165,8 +166,9 @@ export const player = {
       setFailed(false);
       // Fall back to the hand-written duration until metadata arrives.
       setDuration(track.duration);
-      el.src = track.src;
       setLoading(true);
+      // Prefers the segmented stream, drops back to the mp3 on its own.
+      await attachTrack(el, track);
     }
 
     connectAnalyser(el);
@@ -240,6 +242,7 @@ export const player = {
   stop() {
     const el = element();
     stopTracking();
+    detachStream();
     el.pause();
     el.removeAttribute('src');
     el.load();
