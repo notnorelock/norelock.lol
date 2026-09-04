@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import { bootStep } from '@/lib/boot';
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -116,13 +117,20 @@ export default function GlitchPortrait() {
     const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
     scene.add(plane);
 
-    new THREE.TextureLoader().load('/assets/portrait.png', (texture) => {
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      uniforms.uTexture.value = texture;
-      uniforms.uTextureResolution.value.set(texture.image.width, texture.image.height);
-    });
+    new THREE.TextureLoader().load(
+      '/assets/portrait.png',
+      (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        uniforms.uTexture.value = texture;
+        uniforms.uTextureResolution.value.set(texture.image.width, texture.image.height);
+        bootStep('portrait');
+      },
+      undefined,
+      // A missing portrait must not hold the loading screen hostage.
+      () => bootStep('portrait'),
+    );
 
     const resize = () => {
       const rect = host.getBoundingClientRect();

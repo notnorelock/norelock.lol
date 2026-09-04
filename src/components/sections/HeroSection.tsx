@@ -1,10 +1,12 @@
+import { lazy, Suspense } from 'solid-js';
 import { IconArrowDown, IconArrowUpRight, IconCalendarEvent } from '@tabler/icons-solidjs';
 import { buttonVariants } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import GlitchPortrait from '@/components/visuals/GlitchPortrait';
 import { profile } from '@/data/profile';
 import { getBirthdayStats } from '@/lib/date';
 import { cn } from '@/lib/utils';
+
+const GlitchPortrait = lazy(() => import('@/components/visuals/GlitchPortrait'));
 
 export function HeroSection() {
   const birthday = getBirthdayStats();
@@ -47,7 +49,9 @@ export function HeroSection() {
           <div class="hero-orbits" aria-hidden="true"><i /><i /><i /></div>
           <div class="portrait-frame">
             <div class="portrait-aspect">
-              <GlitchPortrait />
+              <Suspense>
+                <GlitchPortrait />
+              </Suspense>
               <div class="portrait-scan" aria-hidden="true" />
               <div class="portrait-corners" aria-hidden="true"><i /><i /><i /><i /></div>
             </div>

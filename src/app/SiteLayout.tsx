@@ -1,11 +1,13 @@
-import { onCleanup, onMount, type ParentProps } from 'solid-js';
+import { lazy, onCleanup, onMount, Suspense, type ParentProps } from 'solid-js';
 import { PlayerBar } from '@/components/music/PlayerBar';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
 import { PointerField } from '@/components/visuals/PointerField';
 import { ScrollProgress } from '@/components/visuals/ScrollProgress';
-import ShaderBackdrop from '@/components/visuals/ShaderBackdrop';
 import { player, usePlayerHotkeys } from '@/lib/player';
+
+// three.js is ~466kB and only paints the backdrop, so let the page render first.
+const ShaderBackdrop = lazy(() => import('@/components/visuals/ShaderBackdrop'));
 
 export function SiteLayout(props: ParentProps) {
   onMount(() => {
@@ -48,7 +50,9 @@ export function SiteLayout(props: ParentProps) {
 
   return (
     <main class="site-root" classList={{ 'has-player': Boolean(player.current()) }}>
-      <ShaderBackdrop />
+      <Suspense>
+        <ShaderBackdrop />
+      </Suspense>
       <div class="page-grid" aria-hidden="true" />
       <div class="page-grain" aria-hidden="true" />
       <div class="page-scanlines" aria-hidden="true" />

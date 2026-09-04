@@ -1,5 +1,6 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
+import { bootStep } from '@/lib/boot';
 
 const vertexShader = /* glsl */ `
   void main() {
@@ -186,6 +187,7 @@ export default function ShaderBackdrop() {
     };
 
     animate();
+    bootStep('backdrop');
 
     onCleanup(() => {
       cancelAnimationFrame(frame);

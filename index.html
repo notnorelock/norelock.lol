@@ -1,14 +1,108 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#08070a" />
-    <meta name="description" content="norelock — developer working on realtime web and multiplayer, reverse engineering games, and making electronic music." />
-    <title>norelock.lol</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/index.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#08070a" />
+  <meta name="description"
+    content="norelock — developer working on realtime web and multiplayer, reverse engineering games, and making electronic music." />
+  <title>norelock.lol</title>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <div id="boot">
+    <style>
+      html {
+        background: #070709;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      #boot {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 26px;
+        background: #070709;
+        transition: opacity 0.55s ease, visibility 0.55s ease;
+      }
+
+      #boot.is-done {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      #boot-logo {
+        width: 62px;
+        height: auto;
+        opacity: 0.92;
+        animation: boot-pulse 2.4s ease-in-out infinite;
+      }
+
+      @keyframes boot-pulse {
+
+        0%,
+        100% {
+          opacity: 0.92;
+        }
+
+        50% {
+          opacity: 0.45;
+        }
+      }
+
+      #boot-track {
+        position: relative;
+        width: 170px;
+        height: 2px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      #boot-fill {
+        position: absolute;
+        inset: 0;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: linear-gradient(90deg, #cf52df, #e9a3f2);
+        transition: transform 0.35s cubic-bezier(0.22, 0.7, 0.24, 1);
+      }
+
+      #boot-label {
+        color: #6f6873;
+        font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.14em;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #boot-logo {
+          animation: none;
+        }
+
+        #boot,
+        #boot-fill {
+          transition: none;
+        }
+      }
+    </style>
+    <img id="boot-logo" src="/assets/norelock-logo-white.svg" alt="" />
+    <div id="boot-track">
+      <div id="boot-fill"></div>
+    </div>
+    <span id="boot-label">0%</span>
+  </div>
+
+  <script type="module" src="/src/index.tsx"></script>
+</body>
+
 </html>
