@@ -16,31 +16,58 @@ const CACHE_MS = 30 * 60 * 1000;
 /** Obvious automation. Real browsers do not announce themselves like this. */
 const BOT = /(bot|crawler|spider|curl|wget|python-requests|axios|httpie|libwww|scrapy|headless)/i;
 
-/** Headers a plain browser request does not carry. */
+/**
+ * Headers a plain browser request does not carry.
+ *
+ * Note that the platform itself is a proxy: Vercel adds its own `via` and puts
+ * its edge address in `x-forwarded-for`. Only hops beyond that are a signal,
+ * otherwise every single request would look relayed.
+ */
 function looksProxied(request: Request) {
   const headers = request.headers;
-  if (headers.get('via') || headers.get('forwarded')) return true;
 
-  // More than one hop in x-forwarded-for means something relayed the request
-  // before it reached the edge.
+  // Vercel's own via header names its infrastructure; anything else in front
+  // of it is somebody else's proxy.
+  const via = headers.get('via');
+  if (via && !/vercel/i.test(via)) return true;
+
+  if (headers.get('forwarded')) return true;
+
+  // The client plus Vercel's edge is two entries. More than that means the
+  // request passed through something before reaching us.
   const forwarded = headers.get('x-forwarded-for');
-  if (forwarded && forwarded.split(',').length > 2) return true;
+  if (forwarded && forwarded.split(',').length > 3) return true;
 
   return false;
 }
 
+/**
+ * Why a request was rejected, or null when it should be counted. Returning the
+ * reason makes a miscounted download debuggable instead of a silent zero.
+ */
+export async function screenRequest(request: Request, ip: string) {
+  const agent = request.headers.get('user-agent') ?? '';
+  if (!agent) return 'no-user-agent';
+  if (BOT.test(agent)) return 'bot-user-agent';
+
+  // A download started from the site carries this; a bare script does not.
+  // 'none' is a direct navigation, 'same-site' covers a subdomain.
+  const site = request.headers.get('sec-fetch-site');
+  if (site && !['same-origin', 'same-site', 'none'].includes(site)) {
+    return `sec-fetch-site:${site}`;
+  }
+
+  const proxied = looksProxied(request);
+  if (proxied) return 'proxy-headers';
+
+  if (ip && (await isVpn(ip))) return 'vpn';
+
+  return null;
+}
+
 /** True when the request should not be counted. */
 export async function isSuspicious(request: Request, ip: string) {
-  const agent = request.headers.get('user-agent') ?? '';
-  if (!agent || BOT.test(agent)) return true;
-
-  // A download started from the site carries these; a bare curl does not.
-  const dest = request.headers.get('sec-fetch-site');
-  if (dest && dest !== 'same-origin' && dest !== 'none') return true;
-
-  if (looksProxied(request)) return true;
-
-  return ip ? await isVpn(ip) : false;
+  return (await screenRequest(request, ip)) !== null;
 }
 
 /** Asks the external service whether the address is a VPN or proxy. */

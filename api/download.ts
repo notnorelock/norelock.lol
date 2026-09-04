@@ -1,6 +1,6 @@
 import { tracks } from '../src/data/tracks';
 import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db';
-import { isSuspicious } from './_lib/vpn';
+import { screenRequest } from './_lib/vpn';
 
 export const config = { runtime: 'edge' };
 
@@ -67,7 +67,11 @@ async function countDownload(request: Request, trackId: string) {
   if (!sql) return;
 
   const ip = clientIp(request);
-  if (await isSuspicious(request, ip)) return;
+  const rejected = await screenRequest(request, ip);
+  if (rejected) {
+    console.warn(`[download] not counted (${rejected})`);
+    return;
+  }
 
   try {
     await ensureSchema();
@@ -112,12 +116,15 @@ async function debugReport(request: Request, id: string | null) {
     userAgent: request.headers.get('user-agent')?.slice(0, 40) ?? null,
     secFetchSite: request.headers.get('sec-fetch-site'),
     forwardedHops: request.headers.get('x-forwarded-for')?.split(',').length ?? 0,
+    via: request.headers.get('via'),
+    forwarded: request.headers.get('forwarded'),
+    allHeaders: [...request.headers.keys()].join(','),
   };
 
   try {
-    report.suspicious = await isSuspicious(request, ip);
+    report.rejectedBecause = (await screenRequest(request, ip)) ?? '(counted)';
   } catch (error) {
-    report.suspiciousError = error instanceof Error ? error.message : String(error);
+    report.screenError = error instanceof Error ? error.message : String(error);
   }
 
   if (sql) {
