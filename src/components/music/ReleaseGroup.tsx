@@ -2,7 +2,7 @@ import { For, Show } from 'solid-js';
 import { IconPlayerPlayFilled } from '@tabler/icons-solidjs';
 import { CoverArt } from '@/components/music/CoverArt';
 import { TrackRow } from '@/components/music/TrackRow';
-import type { Release } from '@/data/tracks';
+import type { Release } from '@/lib/catalog';
 import { formatTime, player } from '@/lib/player';
 
 export function ReleaseGroup(props: { release: Release }) {

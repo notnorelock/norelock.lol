@@ -1,4 +1,4 @@
-import type { Track } from '@/data/tracks';
+import type { Track } from '@/lib/catalog';
 
 /**
  * HLS playback.
@@ -8,21 +8,15 @@ import type { Track } from '@/data/tracks';
  * mp3 stays available for downloads and as a fallback.
  */
 
-/** Where build-hls.mjs writes a track's playlist. */
+/**
+ * Where build-hls.mjs writes a track's playlist.
+ *
+ * The segments mirror the album folder, slugified. The source path stays on
+ * the server, so the URL is rebuilt from the album slug and the track id.
+ */
 export function streamUrl(track: Track) {
-  // track.src is a path inside media/, e.g. "no memory/whisper your name.mp3".
-  const parts = track.src.split('/').filter(Boolean);
-  const dir = parts.slice(0, -1);
-  const slug = (value: string) =>
-    value
-      .toLowerCase()
-      .normalize('NFKD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/['\u2019]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-
-  return ['/music', ...dir.map(slug), `${track.id}.m3u8`].join('/');
+  const dir = track.album ? [track.album] : [];
+  return ['/music', ...dir, `${track.id}.m3u8`].join('/');
 }
 
 /**

@@ -765,6 +765,8 @@ img { display: block; max-width: 100%; }
 }
 .track-download:hover .track-downloads { color: var(--primary-soft); border-left-color: var(--primary-border); }
 
+.music-empty { margin: 0; padding: 34px 0; color: #6f6873; font-family: var(--font-mono); font-size: .74rem; }
+
 .music-outro { margin-top: 46px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
 .music-outro > p { margin: 0; color: #6f6873; font-family: var(--font-mono); font-size: .68rem; }
 .music-outro-links { display: flex; flex-wrap: wrap; gap: 18px; }

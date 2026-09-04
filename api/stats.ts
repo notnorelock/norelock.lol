@@ -1,4 +1,4 @@
-import { tracks } from '../src/data/tracks';
+import { tracks } from './_lib/tracks';
 import { ensureSchema, hasDatabase, sql } from './_lib/db';
 
 export const config = { runtime: 'edge' };

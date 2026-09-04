@@ -1,13 +1,17 @@
-import { For, onMount } from 'solid-js';
+import { createMemo, For, onMount, Show } from 'solid-js';
 import { IconArrowUpRight } from '@tabler/icons-solidjs';
 import { SectionHeading } from '@/components/shared/SectionHeading';
 import { ReleaseGroup } from '@/components/music/ReleaseGroup';
-import { releases } from '@/data/tracks';
+import { TrackRowSkeleton } from '@/components/music/TrackRowSkeleton';
+import { allTracks, catalogFailed, catalogLoaded, groupReleases, loadCatalog } from '@/lib/catalog';
 import { loadDownloadCounts } from '@/lib/downloads';
 
 export default function MusicPage() {
+  const releases = createMemo(() => groupReleases(allTracks()));
+
   onMount(() => {
     document.title = 'music — norelock.lol';
+    void loadCatalog();
     void loadDownloadCounts();
   });
 
@@ -20,9 +24,20 @@ export default function MusicPage() {
         copy={<>play them here or grab the mp3. all 320 kbps, no signup, no email, nothing. if you use one in a video just credit me somewhere.</>}
       />
 
-      <div class="release-list">
-        <For each={releases}>{(release) => <ReleaseGroup release={release} />}</For>
-      </div>
+      <Show when={catalogLoaded()} fallback={<TrackRowSkeleton rows={5} />}>
+        <Show
+          when={releases().length}
+          fallback={
+            <p class="music-empty">
+              {catalogFailed() ? "couldn't load the tracks. try a refresh?" : 'nothing here yet.'}
+            </p>
+          }
+        >
+          <div class="release-list">
+            <For each={releases()}>{(release) => <ReleaseGroup release={release} />}</For>
+          </div>
+        </Show>
+      </Show>
 
       <div class="music-outro">
         <p>the rest lives on streaming.</p>

@@ -2,7 +2,7 @@ import { Show } from 'solid-js';
 import { IconDownload, IconLoader2, IconPlayerPauseFilled, IconPlayerPlayFilled } from '@tabler/icons-solidjs';
 import { CoverArt } from '@/components/music/CoverArt';
 import { Waveform } from '@/components/music/Waveform';
-import type { Track } from '@/data/tracks';
+import type { Track } from '@/lib/catalog';
 import { formatTime, player } from '@/lib/player';
 import { downloadCounts, downloadHref, formatCount, noteDownload } from '@/lib/downloads';
 
@@ -53,7 +53,7 @@ export function TrackRow(props: { track: Track; queue?: Track[] }) {
           peaks={props.track.peaks}
           progress={progress()}
           active={isCurrent()}
-          pending={!props.track.hasRealPeaks}
+          pending={!props.track.peaks.length}
           onSeek={(ratio) => {
             if (!isCurrent()) {
               void player.play(props.track, props.queue).then(() => player.seekRatio(ratio));

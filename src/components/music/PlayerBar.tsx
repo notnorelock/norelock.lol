@@ -69,7 +69,7 @@ export function PlayerBar() {
                 peaks={track().peaks}
                 progress={progress()}
                 active
-                pending={!track().hasRealPeaks}
+                pending={!track().peaks.length}
                 onSeek={(r) => player.seekRatio(r)}
               />
             </div>

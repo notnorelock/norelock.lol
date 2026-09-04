@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import type { Track } from '@/data/tracks';
+import type { Track } from '@/lib/catalog';
 
 const [counts, setCounts] = createSignal<Record<string, number>>({});
 
@@ -49,9 +49,6 @@ export async function loadDownloadCounts() {
  * track list.
  */
 export function downloadHref(track: Track) {
-  // The endpoint only exists on Vercel; in `vite dev` there is nothing behind
-  // /api, so point straight at the file and skip counting.
-  if (import.meta.env.DEV) return track.src;
   return `/api/download?id=${encodeURIComponent(track.id)}`;
 }
 

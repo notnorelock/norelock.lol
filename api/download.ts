@@ -2,7 +2,7 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join, normalize } from 'node:path';
 import { Readable } from 'node:stream';
-import { tracks } from '../src/data/tracks';
+import { tracks } from './_lib/tracks';
 import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db';
 import { screenRequest } from './_lib/vpn';
 

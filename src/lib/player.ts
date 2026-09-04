@@ -1,5 +1,5 @@
 import { createSignal, onCleanup } from 'solid-js';
-import type { Track } from '@/data/tracks';
+import type { Track } from '@/lib/catalog';
 import { attachTrack, detachStream } from '@/lib/stream';
 
 /**

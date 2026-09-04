@@ -51,9 +51,10 @@ Files are named from the mp3 filename (`whisper your name.mp3` →
 **Do not rename files after the first run** — the track loses its waveform and
 leaves an orphaned cover behind.
 
-`bun run music` overwrites title, year, duration, cover and album in
-`src/data/tracks.ts`. It preserves `subtitle`, `tags` and `downloadable`, so
-hand edits to those survive.
+`bun run music` writes `api/_lib/tracks.ts`, which is both what the functions
+read and what `/api/tracks` serves. It overwrites title, year, duration, cover
+and album from the files, and preserves `subtitle`, `tags` and `downloadable`,
+so hand edits to those survive a re-run.
 
 ---
 
@@ -103,6 +104,20 @@ another file or inflate the count for a track that does not exist.
 
 `vercel.json` declares `includeFiles: "media/**"` — nothing imports the mp3
 files, so Vercel would not otherwise ship them with the function.
+
+The functions must not import anything from `src/`. Vercel compiles `api/` in
+place and does not bundle modules from outside it, so such an import resolves
+to a missing file at runtime and the function crashes with
+`ERR_MODULE_NOT_FOUND`. The generated `api/_lib/tracks.ts` is dependency-free
+for that reason.
+
+### The catalogue: `/api/tracks`
+
+The track list is fetched at runtime rather than bundled. Waveform peaks are
+120 numbers per track, so bundling them would grow the JavaScript with every
+release — and the home page, which never draws a waveform, would pay for it
+too. The endpoint strips `src` before responding: that path is only meaningful
+on the server, and the client asks for audio by id.
 
 ---
 
@@ -199,12 +214,12 @@ tables means the write never ran, not that the query failed.
 
 ```
 api/            serverless functions (download, stats)
-  _lib/         database helpers, request screening
+  _lib/         database helpers, request screening, generated track list
 media/          source mp3 files — not published, not served directly
 public/         static assets; music/covers/ lives here
 scripts/        sync-music.mjs (ID3 → track data), build-hls.mjs (segments)
 src/
   components/   sections, music player, visuals
-  data/         generated track data and waveform peaks
-  lib/          player state, HLS attachment, download client
+  data/         profile copy for the home page
+  lib/          catalogue fetching, player state, HLS attachment, downloads
 ```
