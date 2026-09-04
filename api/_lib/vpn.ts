@@ -31,12 +31,15 @@ function looksProxied(request: Request) {
   const via = headers.get('via');
   if (via && !/vercel/i.test(via)) return true;
 
-  if (headers.get('forwarded')) return true;
+  // `forwarded` is set by Vercel itself on every request (it carries the
+  // signed client address), so its mere presence proves nothing. Only a chain
+  // of several hops suggests a relay in front of the platform.
+  const forwarded = headers.get('forwarded');
+  if (forwarded && forwarded.split(',').length > 1) return true;
 
-  // The client plus Vercel's edge is two entries. More than that means the
-  // request passed through something before reaching us.
-  const forwarded = headers.get('x-forwarded-for');
-  if (forwarded && forwarded.split(',').length > 3) return true;
+  // The visitor plus Vercel's edge already accounts for two entries.
+  const chain = headers.get('x-forwarded-for');
+  if (chain && chain.split(',').length > 3) return true;
 
   return false;
 }
