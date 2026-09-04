@@ -1,15 +1,21 @@
 import { IconBrandGithub, IconMenu2 } from '@tabler/icons-solidjs';
+import { A, useLocation } from '@solidjs/router';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
+// Anchors only resolve on the home page, so prefix them when we're elsewhere.
 const nav = [
   ['about', '#about'],
   ['work', '#work'],
+  ['music', '/music'],
   ['links', '#links'],
 ] as const;
 
 export function SiteHeader() {
   let navElement!: HTMLElement;
+  const location = useLocation();
+  const resolve = (href: string) =>
+    href.startsWith('#') && location.pathname !== '/' ? `/${href}` : href;
 
   const toggleMobileNav = () => navElement.classList.toggle('mobile-nav-open');
   const closeMobileNav = () => navElement.classList.remove('mobile-nav-open');
@@ -17,14 +23,14 @@ export function SiteHeader() {
   return (
     <header class="site-header">
       <div class="site-shell header-inner">
-        <a href="#top" class="header-brand" aria-label="norelock.lol home">
+        <A href="/" class="header-brand" aria-label="norelock.lol home">
           <img src="/assets/norelock-logo-white.svg" alt="Norelock" />
           <span>norelock.lol</span>
-        </a>
+        </A>
 
         <nav ref={navElement} class="site-nav" aria-label="Main navigation">
           {nav.map(([label, href]) => (
-            <a href={href} onClick={closeMobileNav}>{label}</a>
+            <a href={resolve(href)} onClick={closeMobileNav}>{label}</a>
           ))}
         </nav>
 
