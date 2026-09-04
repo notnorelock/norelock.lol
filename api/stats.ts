@@ -1,16 +1,25 @@
 import { tracks } from '../src/data/tracks';
-import { ensureSchema, sql } from './_lib/db';
+import { ensureSchema, hasDatabase, sql } from './_lib/db';
 
 export const config = { runtime: 'edge' };
 
 /**
- * Download counts as { "<track-id>": <count> }, limited to tracks that still
- * exist, so a renamed or deleted file stops reporting an orphaned number.
- * Returns an empty object when no database is configured.
+ * Download counts as { counts: { "<track-id>": <count> }, status }.
+ *
+ * Every known track is listed, including the ones nobody has downloaded, so
+ * the UI can show a real zero instead of leaving a gap. `status` says why the
+ * numbers might be missing, because an empty table and a broken connection
+ * otherwise look identical from the client.
  */
 export default async function handler() {
+  const counts: Record<string, number> = {};
+  for (const track of tracks) counts[track.id] = 0;
+
   if (!sql) {
-    return Response.json({}, { headers: { 'cache-control': 'no-store' } });
+    return Response.json(
+      { counts, status: hasDatabase ? 'error' : 'no-database' },
+      { headers: { 'cache-control': 'no-store' } },
+    );
   }
 
   try {
@@ -20,17 +29,25 @@ export default async function handler() {
       count: string | number;
     }[];
 
-    const known = new Set(tracks.map((track) => track.id));
-    const counts: Record<string, number> = {};
+    // Ignore rows for tracks that no longer exist, so a rename does not leave
+    // an orphaned number in the response.
     for (const row of rows) {
-      if (known.has(row.track_id)) counts[row.track_id] = Number(row.count);
+      if (row.track_id in counts) counts[row.track_id] = Number(row.count);
     }
 
-    return Response.json(counts, {
+    return Response.json(
+      { counts, status: 'ok' },
       // A few seconds of lag is fine; minutes of a stale number is not.
-      headers: { 'cache-control': 'public, s-maxage=30, stale-while-revalidate=120' },
-    });
-  } catch {
-    return Response.json({}, { status: 200, headers: { 'cache-control': 'no-store' } });
+      { headers: { 'cache-control': 'public, s-maxage=30, stale-while-revalidate=120' } },
+    );
+  } catch (error) {
+    return Response.json(
+      {
+        counts,
+        status: 'error',
+        message: error instanceof Error ? error.message : 'query failed',
+      },
+      { status: 200, headers: { 'cache-control': 'no-store' } },
+    );
   }
 }

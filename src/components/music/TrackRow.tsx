@@ -76,10 +76,7 @@ export function TrackRow(props: { track: Track; queue?: Track[] }) {
           aria-label={`Download ${props.track.title} as MP3`}
         >
           <IconDownload size={17} stroke={1.6} />
-          <span>320</span>
-          <Show when={downloadCounts()[props.track.id]}>
-            {(count) => <span class="track-downloads">{formatCount(count())}</span>}
-          </Show>
+          <span class="track-downloads">{formatCount(downloadCounts()[props.track.id] ?? 0)}</span>
         </a>
       </Show>
     </article>

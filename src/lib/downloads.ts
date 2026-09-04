@@ -19,9 +19,20 @@ export async function loadDownloadCounts() {
     if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
       return;
     }
-    setCounts(await response.json());
+
+    const body = (await response.json()) as {
+      counts?: Record<string, number>;
+      status?: string;
+      message?: string;
+    };
+
+    if (body.status && body.status !== 'ok') {
+      console.warn(`[downloads] stats unavailable: ${body.status}`, body.message ?? '');
+    }
+
+    if (body.counts) setCounts(body.counts);
   } catch {
-    // No backend, or the request failed. The UI just omits the numbers.
+    // No backend, or the request failed. The UI falls back to zeros.
   }
 }
 
