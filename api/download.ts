@@ -2,36 +2,12 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { join, normalize } from 'node:path';
 import { Readable } from 'node:stream';
-import trackData from './_lib/tracks.json' with { type: 'json' };
+import { tracks } from './_lib/tracks.js';
 import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db.js';
 import { screenRequest } from './_lib/vpn.js';
 
 // Node runtime, not edge: this reads the source files from disk, and they are
 // deliberately outside public/ so they have no public URL.
-/**
- * Rows of the generated tracks.json. The shape is declared here rather than in
- * a shared module: the functions must not depend on a sibling source file that
- * Vercel may not deploy alongside them.
- */
-interface ApiTrack {
-  id: string;
-  title: string;
-  subtitle?: string;
-  year: number;
-  duration: number;
-  /** Path inside media/. Server-side only; never sent to the browser. */
-  src: string;
-  cover: string;
-  album?: string;
-  albumTitle?: string;
-  trackNo?: number;
-  tags?: string[];
-  downloadable?: boolean;
-  peaks: number[];
-}
-
-const tracks = trackData as ApiTrack[];
-
 export const config = { runtime: 'nodejs' };
 
 /** Source audio lives here, outside public/, so it is never served directly. */
