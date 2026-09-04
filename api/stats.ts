@@ -37,8 +37,8 @@ export default async function handler() {
 
     return Response.json(
       { counts, status: 'ok' },
-      // A few seconds of lag is fine; minutes of a stale number is not.
-      { headers: { 'cache-control': 'public, s-maxage=30, stale-while-revalidate=120' } },
+      // Always read through to the database: a cached count is a wrong count.
+      { headers: { 'cache-control': 'no-store' } },
     );
   } catch (error) {
     return Response.json(
