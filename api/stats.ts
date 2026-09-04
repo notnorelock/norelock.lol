@@ -1,5 +1,29 @@
-import { tracks } from './_lib/tracks';
-import { ensureSchema, hasDatabase, sql } from './_lib/db';
+import trackData from './_lib/tracks.json' with { type: 'json' };
+import { ensureSchema, hasDatabase, sql } from './_lib/db.js';
+
+/**
+ * Rows of the generated tracks.json. The shape is declared here rather than in
+ * a shared module: the functions must not depend on a sibling source file that
+ * Vercel may not deploy alongside them.
+ */
+interface ApiTrack {
+  id: string;
+  title: string;
+  subtitle?: string;
+  year: number;
+  duration: number;
+  /** Path inside media/. Server-side only; never sent to the browser. */
+  src: string;
+  cover: string;
+  album?: string;
+  albumTitle?: string;
+  trackNo?: number;
+  tags?: string[];
+  downloadable?: boolean;
+  peaks: number[];
+}
+
+const tracks = trackData as ApiTrack[];
 
 export const config = { runtime: 'edge' };
 
