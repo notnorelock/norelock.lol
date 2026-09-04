@@ -67,8 +67,19 @@ export async function hashIp(ip: string) {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+/**
+ * Anything that exposes headers the way the Web Request does.
+ *
+ * The edge runtime hands over a real Request; the Node runtime hands over
+ * Node's IncomingMessage, which api/download.ts wraps to match. Only headers
+ * are ever read here, so this is all the shape these helpers need.
+ */
+export interface HeaderSource {
+  headers: { get(name: string): string | null };
+}
+
 /** The caller's address, as far as the platform will tell us. */
-export function clientIp(request: Request) {
+export function clientIp(request: HeaderSource) {
   const forwarded = request.headers.get('x-forwarded-for');
   return (
     request.headers.get('x-real-ip') ??

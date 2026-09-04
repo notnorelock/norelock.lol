@@ -1,3 +1,4 @@
+import type { HeaderSource } from './db.js';
 /**
  * VPN / proxy screening.
  *
@@ -23,7 +24,7 @@ const BOT = /(bot|crawler|spider|curl|wget|python-requests|axios|httpie|libwww|s
  * its edge address in `x-forwarded-for`. Only hops beyond that are a signal,
  * otherwise every single request would look relayed.
  */
-function looksProxied(request: Request) {
+function looksProxied(request: HeaderSource) {
   const headers = request.headers;
 
   // Vercel's own via header names its infrastructure; anything else in front
@@ -48,7 +49,7 @@ function looksProxied(request: Request) {
  * Why a request was rejected, or null when it should be counted. Returning the
  * reason makes a miscounted download debuggable instead of a silent zero.
  */
-export async function screenRequest(request: Request, ip: string) {
+export async function screenRequest(request: HeaderSource, ip: string) {
   const agent = request.headers.get('user-agent') ?? '';
   if (!agent) return 'no-user-agent';
   if (BOT.test(agent)) return 'bot-user-agent';
@@ -69,7 +70,7 @@ export async function screenRequest(request: Request, ip: string) {
 }
 
 /** True when the request should not be counted. */
-export async function isSuspicious(request: Request, ip: string) {
+export async function isSuspicious(request: HeaderSource, ip: string) {
   return (await screenRequest(request, ip)) !== null;
 }
 

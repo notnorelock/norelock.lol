@@ -1,9 +1,10 @@
 import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join, normalize } from 'node:path';
-import { Readable } from 'node:stream';
 import { tracks } from './_lib/tracks.js';
 import { clientIp, COOLDOWN_MINUTES, ensureSchema, hashIp, sql } from './_lib/db.js';
+import type { HeaderSource } from './_lib/db.js';
 import { screenRequest } from './_lib/vpn.js';
 
 // Node runtime, not edge: this reads the source files from disk, and they are
@@ -12,6 +13,30 @@ export const config = { runtime: 'nodejs' };
 
 /** Source audio lives here, outside public/, so it is never served directly. */
 const MEDIA_DIR = 'media';
+
+type NodeRequest = IncomingMessage;
+type NodeResponse = ServerResponse;
+
+/**
+ * Presents Node's plain header object through the Headers-style `get()` the
+ * shared helpers expect, so db.ts and vpn.ts work under either runtime.
+ */
+function asWebRequest(req: NodeRequest) {
+  return {
+    headers: {
+      get(name: string) {
+        const value = req.headers[name.toLowerCase()];
+        return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+      },
+    },
+  };
+}
+
+/** Shorthand for the small text responses. */
+function send(res: NodeResponse, status: number, body: string, headers: Record<string, string> = {}) {
+  res.writeHead(status, { 'content-type': 'text/plain', ...headers });
+  res.end(body);
+}
 
 /**
  * Counts a download and streams the file back as an attachment.
@@ -29,27 +54,27 @@ const MEDIA_DIR = 'media';
  * Every guard below only decides whether the hit is *counted*. The file itself
  * is always served.
  */
-export default async function handler(request: Request) {
-  // On the Node runtime request.url is just the path, not an absolute URL, so
-  // give it a base. The host only matters for parsing; nothing here uses it.
-  const url = new URL(request.url, `https://${request.headers.get('host') ?? 'localhost'}`);
+export default async function handler(req: NodeRequest, res: NodeResponse) {
+  // The Node runtime hands over Node's own req/res, not the Web Request and
+  // Response of the edge runtime: req.url is a bare path and req.headers is a
+  // plain object. Wrap it so the shared helpers keep their Headers-style API.
+  const request = asWebRequest(req);
+  const url = new URL(req.url ?? '/', `https://${req.headers.host ?? 'localhost'}`);
   const id = url.searchParams.get('id');
 
   // ?debug=1 explains what the counter would do, without sending the file.
   // Preview and development only: the report exposes part of the visitor's
   // address and the state of the database.
   if (url.searchParams.get('debug') === '1' && process.env.VERCEL_ENV !== 'production') {
-    return debugReport(request, id);
+    return send(res, 200, JSON.stringify(await debugReport(request, id), null, 2), {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+    });
   }
 
   const track = tracks.find((item) => item.id === id);
-  if (!track) {
-    return new Response('unknown track', { status: 404 });
-  }
-
-  if (track.downloadable === false) {
-    return new Response('not downloadable', { status: 403 });
-  }
+  if (!track) return send(res, 404, 'unknown track');
+  if (track.downloadable === false) return send(res, 403, 'not downloadable');
 
   // track.src comes from the generated list, but normalise anyway so a stray
   // '..' could never walk out of the media directory.
@@ -60,7 +85,7 @@ export default async function handler(request: Request) {
   try {
     size = (await stat(path)).size;
   } catch {
-    return new Response('file missing', { status: 404 });
+    return send(res, 404, 'file missing');
   }
 
   // Inline requests are the player falling back from HLS, not someone saving
@@ -73,20 +98,19 @@ export default async function handler(request: Request) {
   const extension = track.src.split('.').pop() ?? 'mp3';
   const filename = `${track.title.replace(/["\/:*?<>|]/g, '')}.${extension}`;
 
-  const stream = Readable.toWeb(createReadStream(path)) as ReadableStream;
-
-  return new Response(stream, {
-    headers: {
-      'content-type': 'audio/mpeg',
-      'content-length': String(size),
-      'content-disposition': inline ? 'inline' : `attachment; filename="${filename}"`,
-      'cache-control': 'no-store',
-    },
+  res.writeHead(200, {
+    'content-type': 'audio/mpeg',
+    'content-length': String(size),
+    'content-disposition': inline ? 'inline' : `attachment; filename="${filename}"`,
+    'cache-control': 'no-store',
   });
+
+  // Pipe rather than buffer: a ten-megabyte track should not sit in memory.
+  createReadStream(path).pipe(res);
 }
 
 /** Records one download unless it looks automated, proxied, or repeated. */
-async function countDownload(request: Request, trackId: string) {
+async function countDownload(request: HeaderSource, trackId: string) {
   if (!sql) return;
 
   const ip = clientIp(request);
@@ -132,7 +156,7 @@ async function countDownload(request: Request, trackId: string) {
 }
 
 /** Explains, step by step, why a hit would or would not be counted. */
-async function debugReport(request: Request, id: string | null) {
+async function debugReport(request: HeaderSource, id: string | null) {
   const track = tracks.find((item) => item.id === id);
   const ip = clientIp(request);
 
@@ -167,5 +191,5 @@ async function debugReport(request: Request, id: string | null) {
     }
   }
 
-  return Response.json(report, { headers: { 'cache-control': 'no-store' } });
+  return report;
 }
