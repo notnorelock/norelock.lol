@@ -30,7 +30,9 @@ const MEDIA_DIR = 'media';
  * is always served.
  */
 export default async function handler(request: Request) {
-  const url = new URL(request.url);
+  // On the Node runtime request.url is just the path, not an absolute URL, so
+  // give it a base. The host only matters for parsing; nothing here uses it.
+  const url = new URL(request.url, `https://${request.headers.get('host') ?? 'localhost'}`);
   const id = url.searchParams.get('id');
 
   // ?debug=1 explains what the counter would do, without sending the file.
