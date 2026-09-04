@@ -30,7 +30,7 @@ export function ReleaseGroup(props: { release: Release }) {
         <button
           type="button"
           class="release-play"
-          onClick={() => void player.play(props.release.tracks[0])}
+          onClick={() => void player.play(props.release.tracks[0], props.release.tracks)}
         >
           <IconPlayerPlayFilled size={15} />
           play {isAlbum() ? 'album' : 'all'}
@@ -38,7 +38,9 @@ export function ReleaseGroup(props: { release: Release }) {
       </header>
 
       <div class="track-list">
-        <For each={props.release.tracks}>{(track) => <TrackRow track={track} />}</For>
+        <For each={props.release.tracks}>
+          {(track) => <TrackRow track={track} queue={props.release.tracks} />}
+        </For>
       </div>
     </section>
   );

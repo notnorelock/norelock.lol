@@ -789,6 +789,17 @@ img { display: block; max-width: 100%; }
   padding-block: 11px;
 }
 .player-cover { width: 44px; height: 44px; object-fit: cover; border: 1px solid var(--border); }
+.player-transport { display: flex; align-items: center; gap: 4px; }
+.player-skip {
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  border: 0; background: none; cursor: pointer;
+  color: #857d89;
+  transition: color .2s ease, opacity .2s ease;
+}
+.player-skip:hover:not(:disabled) { color: var(--primary-soft); }
+.player-skip:disabled { opacity: .28; cursor: default; }
+
 .player-toggle {
   width: 34px; height: 34px; flex: none;
   display: grid; place-items: center;

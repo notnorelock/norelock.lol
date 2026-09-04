@@ -5,7 +5,7 @@ import { Waveform } from '@/components/music/Waveform';
 import type { Track } from '@/data/tracks';
 import { formatTime, player } from '@/lib/player';
 
-export function TrackRow(props: { track: Track }) {
+export function TrackRow(props: { track: Track; queue?: Track[] }) {
   const isCurrent = () => player.isCurrent(props.track);
   const isPlaying = () => isCurrent() && player.playing();
   const total = () => (isCurrent() ? player.duration() || props.track.duration : props.track.duration);
@@ -18,7 +18,7 @@ export function TrackRow(props: { track: Track }) {
         <button
           type="button"
           class="track-play"
-          onClick={() => player.toggle(props.track)}
+          onClick={() => player.toggle(props.track, props.queue)}
           aria-label={isPlaying() ? `Pause ${props.track.title}` : `Play ${props.track.title}`}
         >
           <Show
@@ -55,7 +55,7 @@ export function TrackRow(props: { track: Track }) {
           pending={!props.track.hasRealPeaks}
           onSeek={(ratio) => {
             if (!isCurrent()) {
-              void player.play(props.track).then(() => player.seekRatio(ratio));
+              void player.play(props.track, props.queue).then(() => player.seekRatio(ratio));
               return;
             }
             player.seekRatio(ratio);

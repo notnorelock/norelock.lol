@@ -3,6 +3,8 @@ import {
   IconDownload,
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
+  IconPlayerSkipBackFilled,
+  IconPlayerSkipForwardFilled,
   IconVolume,
   IconX,
 } from '@tabler/icons-solidjs';
@@ -21,16 +23,38 @@ export function PlayerBar() {
           <div class="site-shell player-inner">
             <CoverArt class="player-cover" src={track().cover} size={44} eager />
 
-            <button
-              type="button"
-              class="player-toggle"
-              onClick={() => player.toggle(track())}
-              aria-label={player.playing() ? 'Pause' : 'Play'}
-            >
-              <Show when={player.playing()} fallback={<IconPlayerPlayFilled size={17} />}>
-                <IconPlayerPauseFilled size={17} />
-              </Show>
-            </button>
+            <div class="player-transport">
+              <button
+                type="button"
+                class="player-skip"
+                onClick={() => player.previous()}
+                disabled={!player.hasPrevious() && player.position() < 3}
+                aria-label="Previous track"
+              >
+                <IconPlayerSkipBackFilled size={14} />
+              </button>
+
+              <button
+                type="button"
+                class="player-toggle"
+                onClick={() => player.toggle(track())}
+                aria-label={player.playing() ? 'Pause' : 'Play'}
+              >
+                <Show when={player.playing()} fallback={<IconPlayerPlayFilled size={17} />}>
+                  <IconPlayerPauseFilled size={17} />
+                </Show>
+              </button>
+
+              <button
+                type="button"
+                class="player-skip"
+                onClick={() => player.next()}
+                disabled={!player.hasNext()}
+                aria-label="Next track"
+              >
+                <IconPlayerSkipForwardFilled size={14} />
+              </button>
+            </div>
 
             <div class="player-title">
               <strong>{track().title}</strong>

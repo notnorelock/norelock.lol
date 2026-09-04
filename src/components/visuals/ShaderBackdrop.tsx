@@ -1,6 +1,7 @@
 import { onCleanup, onMount } from 'solid-js';
 import * as THREE from 'three';
 import { bootStep } from '@/lib/boot';
+import { audioLevel } from '@/lib/player';
 
 const vertexShader = /* glsl */ `
   void main() {
@@ -16,6 +17,7 @@ const fragmentShader = /* glsl */ `
   uniform float uTime;
   uniform float uScroll;
   uniform float uPointerSpeed;
+  uniform float uAudio;
 
   float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -68,10 +70,45 @@ const fragmentShader = /* glsl */ `
     float detail = fbm(p * 3.1 - vec2(t * 0.31, t * 0.44));
 
     vec2 orbitCenter = vec2(0.31, 0.03);
-    float radius = length(p - orbitCenter);
-    float ring1 = line(radius - 0.52 - sin(t * 1.3) * 0.010, 0.0045);
-    float ring2 = line(radius - 0.74 - cos(t * 0.8) * 0.012, 0.0032);
-    float ring3 = line(radius - 0.96, 0.0024);
+    vec2 toCenter = p - orbitCenter;
+    float radius = length(toCenter);
+    float angle = atan(toCenter.y, toCenter.x);
+
+    // How far this fragment's slice of the ring sits from the cursor. The
+    // rings bulge away from the pointer, so dragging across them drags a
+    // travelling bump along the curve instead of moving the whole circle.
+    vec2 mouseDir = mouse - orbitCenter;
+    float mouseAngle = atan(mouseDir.y, mouseDir.x);
+    float angleGap = abs(atan(sin(angle - mouseAngle), cos(angle - mouseAngle)));
+    float wake = exp(-3.4 * angleGap * angleGap) * (0.35 + uPointerSpeed * 0.9);
+
+    float pulse = uAudio;
+
+    // Standing waves running around the circumference: two harmonics per ring
+    // at slightly different speeds, so the crests drift instead of locking.
+    float wobble1 = sin(angle * 5.0 - t * 2.4) * 0.5 + sin(angle * 9.0 + t * 1.7) * 0.28;
+    float wobble2 = sin(angle * 7.0 + t * 1.9) * 0.5 + sin(angle * 3.0 - t * 2.8) * 0.34;
+    float wobble3 = sin(angle * 4.0 - t * 1.5) * 0.5 + sin(angle * 11.0 + t * 2.2) * 0.22;
+
+    // A slow noise term keeps the shapes from reading as pure sine maths.
+    // Sampled from the direction vector rather than the angle, because atan
+    // wraps at +-PI and would leave a visible seam down one side.
+    vec2 dir = toCenter / max(radius, 0.0001);
+    float drift = (fbm(dir * 1.9 + vec2(t * 0.5, -t * 0.35)) - 0.5) * 2.0;
+
+    // Idle amplitude is small; the music and the cursor open it up.
+    float amp = 0.006 + pulse * 0.030;
+
+    float r1 = radius - 0.52 - sin(t * 1.3) * 0.010 - pulse * 0.045
+             - wobble1 * amp - drift * 0.010 - wake * 0.055;
+    float r2 = radius - 0.74 - cos(t * 0.8) * 0.012 - pulse * 0.065
+             - wobble2 * amp * 1.2 - drift * 0.013 - wake * 0.072;
+    float r3 = radius - 0.96 - pulse * 0.085
+             - wobble3 * amp * 1.45 - drift * 0.016 - wake * 0.090;
+
+    float ring1 = line(r1, 0.0045 + pulse * 0.0055);
+    float ring2 = line(r2, 0.0032 + pulse * 0.0042);
+    float ring3 = line(r3, 0.0024 + pulse * 0.0030);
 
     vec2 gridUv = p * 7.0;
     float gx = line(fract(gridUv.x) - 0.5, 0.006);
@@ -86,9 +123,9 @@ const fragmentShader = /* glsl */ `
     float glitchPulse = glitchRow * (0.35 + uPointerSpeed * 0.65);
 
     vec3 color = vec3(0.010, 0.009, 0.013);
-    color += vec3(0.050, 0.008, 0.068) * pow(max(fog - 0.42, 0.0), 1.8) * 1.35;
+    color += vec3(0.050, 0.008, 0.068) * pow(max(fog - 0.42, 0.0), 1.8) * (1.35 + pulse * 0.5);
     color += vec3(0.11, 0.014, 0.16) * pow(max(detail - 0.58, 0.0), 2.3) * 0.74;
-    color += vec3(0.26, 0.035, 0.33) * (ring1 * 0.18 + ring2 * 0.10 + ring3 * 0.055);
+    color += vec3(0.26, 0.035, 0.33) * (1.0 + pulse * 1.5) * (ring1 * 0.18 + ring2 * 0.10 + ring3 * 0.055);
     color += vec3(0.15, 0.024, 0.19) * grid * 0.09;
     color += vec3(0.34, 0.036, 0.42) * beam * 0.035;
     color += vec3(0.15, 0.018, 0.18) * lens * 0.18;
@@ -130,6 +167,7 @@ export default function ShaderBackdrop() {
       uTime: { value: 0 },
       uScroll: { value: 0 },
       uPointerSpeed: { value: 0 },
+      uAudio: { value: 0 },
     };
 
     const material = new THREE.ShaderMaterial({
@@ -182,6 +220,12 @@ export default function ShaderBackdrop() {
       uniforms.uMouse.value.lerp(targetMouse, 0.045);
       uniforms.uPointerSpeed.value += (targetSpeed - uniforms.uPointerSpeed.value) * 0.09;
       targetSpeed *= 0.91;
+
+      // Rise fast on a transient, fall slowly, so the rings punch and settle
+      // instead of jittering with every frame of the FFT.
+      const level = reducedMotion ? 0 : audioLevel();
+      const current = uniforms.uAudio.value;
+      uniforms.uAudio.value += (level - current) * (level > current ? 0.35 : 0.06);
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };
