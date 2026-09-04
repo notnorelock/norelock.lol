@@ -27,7 +27,7 @@ export function WorkSection() {
               <div class="project-stack">
                 <For each={project.stack}>{(tech) => <Badge variant="outline">{tech}</Badge>}</For>
               </div>
-              <span class="project-arrow"><IconArrowUpRight size={24} stroke={1.3} /></span>
+              <span class="project-arrow"><IconArrowUpRight size={24} stroke-width={1.3} /></span>
             </a>
           )}
         </For>

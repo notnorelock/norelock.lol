@@ -25,7 +25,7 @@ export function CoverArt(props: Props) {
 
       <Show when={state() === 'error'}>
         <div class="cover-fallback" aria-hidden="true">
-          <IconMusic size={Math.round(props.size * 0.34)} stroke={1.3} />
+          <IconMusic size={Math.round(props.size * 0.34)} stroke-width={1.3} />
         </div>
       </Show>
 

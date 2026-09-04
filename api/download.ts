@@ -33,15 +33,16 @@ export default async function handler(request: Request) {
     return new Response('not downloadable', { status: 403 });
   }
 
-  const upstream = await fetch(new URL(track.src, url.origin));
+  // Fetch the file and record the hit at the same time. The write has to be
+  // awaited before responding, because an edge function stops executing the
+  // moment it returns, dropping anything still running in the background.
+  const [upstream] = await Promise.all([
+    fetch(new URL(track.src, url.origin)),
+    countDownload(request, track.id),
+  ]);
+
   if (!upstream.ok || !upstream.body) {
     return new Response('file missing', { status: 404 });
-  }
-
-  // Count in the background so screening never delays the download.
-  const counted = countDownload(request, track.id);
-  if (typeof (globalThis as { waitUntil?: unknown }).waitUntil !== 'function') {
-    void counted;
   }
 
   const extension = track.src.split('.').pop() ?? 'mp3';

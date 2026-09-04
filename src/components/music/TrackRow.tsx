@@ -77,7 +77,7 @@ export function TrackRow(props: { track: Track; queue?: Track[] }) {
           target="_self"
           rel="external"
         >
-          <IconDownload size={17} stroke={1.6} />
+          <IconDownload size={17} stroke-width={1.6} />
           <span class="track-downloads">{formatCount(downloadCounts()[props.track.id] ?? 0)}</span>
         </a>
       </Show>

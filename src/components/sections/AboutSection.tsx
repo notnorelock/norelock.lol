@@ -35,7 +35,7 @@ export function AboutSection() {
                       <p>{item.eyebrow}</p>
                       <h3>{item.title}</h3>
                     </div>
-                    <item.icon size={32} stroke={1.25} />
+                    <item.icon size={32} stroke-width={1.25} />
                   </div>
                   <p class="discipline-copy">{item.copy}</p>
                   <div class="discipline-stack">
@@ -55,12 +55,12 @@ export function AboutSection() {
               <Card class="capability-card group">
                 <CardHeader class="capability-head">
                   <span class="capability-index">0{index() + 1}</span>
-                  <item.icon size={24} stroke={1.3} />
+                  <item.icon size={24} stroke-width={1.3} />
                 </CardHeader>
                 <CardContent class="capability-content">
                   <CardTitle>{item.title}</CardTitle>
                   <p>{item.text}</p>
-                  <IconArrowRight size={18} stroke={1.4} class="capability-arrow" />
+                  <IconArrowRight size={18} stroke-width={1.4} class="capability-arrow" />
                 </CardContent>
               </Card>
             </SpotlightCard>

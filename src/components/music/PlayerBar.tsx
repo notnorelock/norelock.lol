@@ -77,7 +77,7 @@ export function PlayerBar() {
             <span class="player-time">{formatTime(total())}</span>
 
             <label class="player-volume">
-              <IconVolume size={16} stroke={1.5} />
+              <IconVolume size={16} stroke-width={1.5} />
               <input
                 type="range"
                 min="0"
@@ -97,11 +97,11 @@ export function PlayerBar() {
               target="_self"
               rel="external"
             >
-              <IconDownload size={16} stroke={1.6} />
+              <IconDownload size={16} stroke-width={1.6} />
             </a>
 
             <button type="button" class="player-close" onClick={() => player.stop()} aria-label="Close player">
-              <IconX size={16} stroke={1.6} />
+              <IconX size={16} stroke-width={1.6} />
             </button>
           </div>
         </div>

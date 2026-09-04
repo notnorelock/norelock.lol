@@ -30,17 +30,17 @@ export function HeroSection() {
           <div class="hero-meta">
             <span><strong>{birthday.age}</strong> years old</span>
             <Separator orientation="vertical" class="hero-meta-separator" />
-            <span><IconCalendarEvent size={14} stroke={1.55} /> born {profile.birthday}</span>
+            <span><IconCalendarEvent size={14} stroke-width={1.55} /> born {profile.birthday}</span>
             <Separator orientation="vertical" class="hero-meta-separator" />
             <span>{birthday.daysUntilBirthday} days to the next one</span>
           </div>
 
           <div class="hero-actions-row">
             <a href="#work" class={cn(buttonVariants({ size: 'lg' }), 'hero-primary group')}>
-              selected work <IconArrowDown size={17} stroke={1.6} class="transition-transform group-hover:translate-y-0.5" />
+              selected work <IconArrowDown size={17} stroke-width={1.6} class="transition-transform group-hover:translate-y-0.5" />
             </a>
             <a href="https://github.com/notnorelock" target="_blank" rel="noreferrer" class={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'group')}>
-              github <IconArrowUpRight size={17} stroke={1.6} class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              github <IconArrowUpRight size={17} stroke-width={1.6} class="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </a>
           </div>
         </div>

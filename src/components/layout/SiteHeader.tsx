@@ -44,12 +44,12 @@ export function SiteHeader() {
               class="header-icon-link"
               aria-label="Open GitHub"
             >
-              <IconBrandGithub size={18} stroke={1.55} />
+              <IconBrandGithub size={18} stroke-width={1.55} />
             </TooltipTrigger>
             <TooltipContent>github.com/notnorelock</TooltipContent>
           </Tooltip>
           <Button variant="ghost" size="icon" class="mobile-menu-button md:hidden" onClick={toggleMobileNav} aria-label="Toggle navigation">
-            <IconMenu2 size={20} stroke={1.55} />
+            <IconMenu2 size={20} stroke-width={1.55} />
           </Button>
         </div>
       </div>
