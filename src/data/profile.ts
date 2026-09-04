@@ -2,6 +2,7 @@ import {
   IconBrandTypescript,
   IconBrowser,
   IconBug,
+  IconCar,
   IconCode,
   IconDeviceGamepad2,
   IconMusic,
@@ -65,6 +66,16 @@ export const capabilityCards = [
 export const projects = [
   {
     id: '01',
+    title: 'summer hideout',
+    type: 'game dev / networking + music',
+    href: 'https://discord.gg/summer-hideout',
+    description:
+      "a story-driven game about building a car from the ground up and poking at things that should not be happening, set in the polish countryside around 2005. i handle the networking side — native multiplayer, keeping players in sync, the groundwork underneath it — and i write music for it too, which is the first time both halves of what i do have ended up in the same project.",
+    stack: ['unity', 'c#', 'networking', 'multiplayer', 'soundtrack'],
+    icon: IconCar,
+  },
+  {
+    id: '02',
     title: 'vanta multiplayer',
     type: 'multiplayer / game tech',
     href: 'https://vantamp.xyz',
@@ -74,7 +85,7 @@ export const projects = [
     icon: IconNetwork,
   },
   {
-    id: '02',
+    id: '03',
     title: 'borealise',
     type: 'social music / realtime web',
     href: 'https://borealise.com',
