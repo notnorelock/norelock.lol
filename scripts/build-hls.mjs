@@ -88,7 +88,7 @@ if (!files.length) {
 }
 
 if (!existsSync('dist')) {
-  console.error('dist/ is missing — run this after `vite build`');
+  console.error('dist/ is missing — run this after copying public/ to dist/');
   process.exit(1);
 }
 
