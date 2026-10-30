@@ -2,7 +2,7 @@
 
 Personal site: portfolio on `/`, music player on `/music`.
 
-SolidJS + Vite, deployed on Vercel. Two serverless functions handle downloads
+Plain HTML, CSS and one `app.js` in `public/`, no framework and no bundler, deployed on Vercel. Two serverless functions handle downloads
 and their counters; everything else is static.
 
 ---
@@ -10,14 +10,14 @@ and their counters; everything else is static.
 ## Running it
 
 ```bash
-bun install
-bun run dev          # localhost:5173
-bun run build        # vite build, then slices the audio into HLS segments
-bun run typecheck
-bun run salt         # prints a fresh IP_HASH_SALT
+npm install
+npm run dev          # serves public/ as-is (no API)
+npm run build        # copies public/ to dist/, adds hls.js, slices the audio into HLS segments
+npm run typecheck    # api/ only
+npm run salt         # prints a fresh IP_HASH_SALT
 ```
 
-`bun run dev` serves the site without the API — download counters stay at zero
+`npm run dev` serves the site without the API — download counters stay at zero
 and the download buttons link straight to the files. To exercise the functions
 locally, use `vercel dev` instead.
 
@@ -28,8 +28,8 @@ locally, use `vercel dev` instead.
 Drop tagged mp3 files into `media/` and run:
 
 ```bash
-bun run music -- --dry   # shows what it would do, changes nothing
-bun run music            # reads tags, extracts covers, rewrites track data
+npm run music -- --dry   # shows what it would do, changes nothing
+npm run music            # reads tags, extracts covers, rewrites track data
 ```
 
 The script reads ID3 tags, so the tags are the source of truth:
@@ -52,7 +52,7 @@ Files are named from the mp3 filename (`whisper your name.mp3` →
 **Do not rename files after the first run** — the track loses its waveform and
 leaves an orphaned cover behind.
 
-`bun run music` writes `api/_lib/tracks.ts`, which is both what the functions
+`npm run music` writes `api/_lib/tracks.ts`, which is both what the functions
 read and what `/api/tracks` serves. It overwrites title, year, duration, cover
 and album from the files, and preserves `subtitle`, `tags` and `downloadable`,
 so hand edits to those survive a re-run.
@@ -71,7 +71,7 @@ Two different things happen depending on whether you are listening or saving.
 
 ### Listening: HLS segments
 
-`bun run build` runs `scripts/build-hls.mjs`, which slices every mp3 into
+`npm run build` runs `scripts/build-hls.mjs`, which slices every mp3 into
 ten-second AAC segments and writes them to `dist/music/`. Playing a track pulls
 a few hundred kilobytes at a time instead of the whole file, and skipping to
 the end does not download the middle.
@@ -90,8 +90,9 @@ Three things are easy to get wrong here and are handled in the script:
 - fluent-ffmpeg passes the segment filename through a shell string, so a space
   in a folder name truncates the path. Output directories are slugified.
 
-Playback uses `hls.js`, except in Safari which plays HLS natively. The library
-is a separate ~185 kB (gzipped) chunk loaded only when playback starts. If a
+Playback uses `hls.js`, except in Safari which plays HLS natively. The build copies
+`hls.light.min.js` to `/hls.js`; it is loaded only when playback starts in a
+browser without native HLS. If a
 playlist is missing or fails, the player falls back to
 `/api/download?inline=1`, which streams the mp3 and does **not** touch the
 counter.
@@ -106,7 +107,7 @@ another file or inflate the count for a track that does not exist.
 `vercel.json` declares `includeFiles: "media/**"` — nothing imports the mp3
 files, so Vercel would not otherwise ship them with the function.
 
-The functions must not import anything from `src/`. Vercel compiles `api/` in
+The functions must not import anything from outside `api/`. Vercel compiles `api/` in
 place and does not bundle modules from outside it, so such an import resolves
 to a missing file at runtime and the function crashes with
 `ERR_MODULE_NOT_FOUND`. The generated `api/_lib/tracks.ts` is dependency-free
@@ -195,7 +196,7 @@ site — without them downloads work normally and counts stay at zero.
 ### Setting `IP_HASH_SALT`
 
 ```bash
-bun run salt
+npm run salt
 ```
 
 That prints a fresh 32-byte value. Then:
@@ -240,10 +241,6 @@ tables means the write never ran, not that the query failed.
 api/            serverless functions (download, stats)
   _lib/         database helpers, request screening, generated track list
 media/          source mp3 files — not published, not served directly
-public/         static assets; music/covers/ lives here
+public/         the site: index.html, music.html, style.css, app.js, fonts, assets
 scripts/        sync-music.mjs (ID3 → track data), build-hls.mjs (segments)
-src/
-  components/   sections, music player, visuals
-  data/         profile copy for the home page
-  lib/          catalogue fetching, player state, HLS attachment, downloads
 ```

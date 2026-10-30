@@ -1,59 +1,22 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "bun run build",
+  "framework": null,
+  "buildCommand": "rm -rf dist && cp -r public dist && cp node_modules/hls.js/dist/hls.light.min.js dist/hls.js && node scripts/build-hls.mjs",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "rewrites": [
-    {
-      "source": "/((?!api/|music/|assets/).*)",
-      "destination": "/index.html"
-    }
-  ],
+  "cleanUrls": true,
   "headers": [
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/music/(.*).ts",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
+    { "source": "/(assets|fonts)/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
+    { "source": "/music/(.*).ts", "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }] },
     {
       "source": "/music/(.*).m3u8",
       "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/vnd.apple.mpegurl"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=3600" },
+        { "key": "Content-Type", "value": "application/vnd.apple.mpegurl" }
       ]
     },
-    {
-      "source": "/music/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=86400"
-        }
-      ]
-    }
+    { "source": "/music/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] }
   ],
   "functions": {
-    "api/download.ts": {
-      "includeFiles": "media/**"
-    }
+    "api/download.ts": { "includeFiles": "media/**" }
   }
 }

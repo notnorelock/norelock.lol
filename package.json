@@ -4,41 +4,22 @@
   "version": "0.4.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build && bun scripts/build-hls.mjs",
-    "preview": "vite preview --host 0.0.0.0",
+    "dev": "npx serve public",
+    "build": "rm -rf dist && cp -r public dist && cp node_modules/hls.js/dist/hls.light.min.js dist/hls.js && node scripts/build-hls.mjs",
     "typecheck": "tsc --noEmit",
-    "music": "bun scripts/sync-music.mjs",
-    "hls": "bun scripts/build-hls.mjs",
-    "salt": "bun scripts/gen-salt.mjs"
+    "music": "node scripts/sync-music.mjs",
+    "hls": "node scripts/build-hls.mjs",
+    "salt": "node scripts/gen-salt.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "^5.2.8",
-    "@fontsource-variable/jetbrains-mono": "^5.2.8",
-    "@fontsource-variable/space-grotesk": "^5.2.8",
-    "@kobalte/core": "^0.13.13",
     "@neondatabase/serverless": "^1.1.0",
-    "@solidjs/router": "^1.0.0",
-    "@tabler/icons-solidjs": "^3.46.0",
-    "@vercel/analytics": "^2.0.1",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "hls.js": "^1.7.2",
-    "simple-icons": "^16.29.0",
-    "solid-js": "^1.9.4",
-    "tailwind-merge": "^3.3.1",
-    "three": "^0.172.0"
+    "hls.js": "^1.7.2"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.3",
     "@types/node": "^26.4.1",
-    "@types/three": "^0.185.4",
     "ffmpeg-static": "^5.3.0",
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.3",
-    "tailwindcss": "^4.0.3",
-    "typescript": "^5.7.3",
-    "vite": "^6.0.11",
-    "vite-plugin-solid": "^2.11.1"
+    "typescript": "^5.7.3"
   }
 }
